@@ -1,10 +1,9 @@
 import pandas as pd
-import uuid
 import os
 from dotenv import load_dotenv
 from google import genai
 from langchain_google_genai import ChatGoogleGenerativeAI, GoogleGenerativeAIEmbeddings
-from langchain_community.vectorstores import FAISS
+from langchain.vectorstores import FAISS
 
 load_dotenv()
 api_key = os.getenv("GEMINI_API_KEY")
