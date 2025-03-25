@@ -60,8 +60,22 @@ with col1:
                 jd_skills = job_details.get('skills', [])
                 ext_skills = skills_obj.query_skills(jd_skills)
                 projects = skills_obj.query_projects(jd_skills)
-                st.write("\U0001F4CC Job Details Extracted:")
-                st.json(job_details)
+
+                st.markdown("📌 **Extracted Job Details:**")
+                st.markdown(f"""
+                - **Company:** {job_details.get('company', 'N/A')}
+                - **Role:** {job_details.get('role', 'N/A')}
+                
+                **Experience Required:** 
+                {job_details.get('experience', 'N/A')}
+
+                **Skills Required:**  
+                {', '.join(job_details.get('skills', []))}
+
+
+                **Job Description:**  
+                {job_details.get('description', 'N/A')}
+                """)
 
                 resume, best_resume_path, resume_scores = resume_handler.load_resumes(job_details)
 
@@ -75,6 +89,14 @@ with col1:
                     """)
 
                 st.success(f"✅ Best Resume: `{os.path.basename(best_resume_path)}`")
+                # Suggest missing skills for the best resume
+                suggested_skills = resume_handler.suggest_skills(job_details['skills'], best_resume_path)
+
+                if suggested_skills:
+                    inline_skills = ", ".join(suggested_skills)
+                    st.markdown(f"📌 **Suggested Skills to Add:** {inline_skills}")
+                else:
+                    st.success("✅ Your resume includes all the key kills")
 
                 suggested_projects = skills_obj.generate_project_ideas(jd_skills)
                 st.write("🧠 Suggested Project Ideas:")

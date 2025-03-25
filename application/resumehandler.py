@@ -9,10 +9,6 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-# Initialize API key and model
-api_key = os.getenv("GEMINI_API_KEY")
-model = SentenceTransformer('all-MiniLM-L6-v2')
-
 class ResumeHandler:
     def __init__(self, api_key, pdf_paths=[]):
         self.api_key = api_key
@@ -20,18 +16,21 @@ class ResumeHandler:
         self.gemini_embeddings = GoogleGenerativeAIEmbeddings(
             model="models/text-embedding-004", google_api_key=self.api_key
         )
+        self.model = SentenceTransformer('all-MiniLM-L6-v2')
         self.vectordb = None
 
-    
+    def embed_text(self, text):
+        return self.model.encode(text).reshape(1, -1)
+
+    def extract_text_from_pdf(self, pdf_path):
+        loader = PyPDFLoader(pdf_path)
+        pages = loader.load_and_split()
+        return " ".join([p.page_content for p in pages])
+
     def load_resumes(self, jd):
         from chain import Chain
         if not self.pdf_paths:
             return "No resumes uploaded yet.", None, {}
-
-        best_score = 0
-        best_resume = ""
-        best_content = ""
-        resume_scores = {}
 
         job_text = f"""
         Role: {jd['role']}
@@ -39,22 +38,20 @@ class ResumeHandler:
         Skills: {', '.join(jd['skills'])}
         Description: {jd['description']}
         """
-        jd_embedding = model.encode(job_text).reshape(1, -1)
+        jd_embedding = self.embed_text(job_text)
+
+        best_score = 0
+        best_resume = ""
+        best_content = ""
+        resume_scores = {}
 
         for pdf in self.pdf_paths:
-            loader = PyPDFLoader(pdf)
-            pages = loader.load_and_split()
-            full_text = " ".join([p.page_content for p in pages])
-            embedding = model.encode(full_text).reshape(1, -1)
+            full_text = self.extract_text_from_pdf(pdf)
+            embedding = self.embed_text(full_text)
 
-            # Semantic similarity
             semantic_score = cosine_similarity(embedding, jd_embedding)[0][0]
-
-            # Keyword overlap
             matches = sum(1 for skill in jd['skills'] if skill.lower() in full_text.lower())
             keyword_score = matches / len(jd['skills']) if jd['skills'] else 0
-
-            # Weighted final score
             final_score = (semantic_score * 0.6) + (keyword_score * 0.4)
 
             resume_scores[os.path.basename(pdf)] = {
@@ -69,13 +66,10 @@ class ResumeHandler:
                 best_content = full_text
 
         self.vectordb = FAISS.from_texts([best_content], embedding=self.gemini_embeddings)
-        self.vectordb.save_local("faiss_index")
-        # Save the FAISS index locally
-        faiss_index_file = "faiss_index"
-        self.vectordb.save_local(faiss_index_file)
+        # self.vectordb.save_local("faiss_index")
 
-        if os.path.exists(faiss_index_file):
-            self.vectordb = FAISS.load_local(faiss_index_file, self.gemini_embeddings, allow_dangerous_deserialization=True)
+        # if os.path.exists("faiss_index"):
+        #     self.vectordb = FAISS.load_local("faiss_index", self.gemini_embeddings, allow_dangerous_deserialization=True)
 
         query = f"Role: {jd['role']}, Description: {jd['description']}"
         chain = RetrievalQA.from_chain_type(llm=Chain().llm, retriever=self.vectordb.as_retriever())
@@ -83,3 +77,7 @@ class ResumeHandler:
         resume = result["result"]
         return resume, best_resume, resume_scores
 
+    def suggest_skills(self, jd_skills, resume_path):
+        resume_text = self.extract_text_from_pdf(resume_path).lower()
+        missing_skills = [skill for skill in jd_skills if skill.lower() not in resume_text]
+        return missing_skills
