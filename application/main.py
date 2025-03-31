@@ -2,25 +2,22 @@ import streamlit as st
 from resumehandler import ResumeHandler
 from langchain_community.document_loaders import WebBaseLoader
 from chain import Chain
-from google import genai
 from skills import skills
+from utils import safe_format, clean_text
 import os
+import shutil
 from datetime import datetime
 import time
-
 from dotenv import load_dotenv
 from langchain_google_genai import ChatGoogleGenerativeAI
 
 st.set_page_config(page_title="AI Chatbot", layout="wide")
 load_dotenv()
 
-
 api_key = os.getenv("GEMINI_API_KEY")
-client = genai.Client(api_key=api_key)
 
-chain = Chain()   
-resume_handler = ResumeHandler(api_key, pdf_paths=[])
-
+chain = Chain()
+resume_handler = ResumeHandler(api_key)
 
 col1, col2 = st.columns([1.5, 1])
 
@@ -28,15 +25,18 @@ with col1:
     st.title("Job Resume Generator and Email Writer")
     st.write("Upload your resume PDF and provide a job description link.")
 
-    if not os.path.exists("resumes"):
-        os.makedirs("resumes")
+    resume_dir = "resumes"
+    # Completely remove old resume directory and recreate it
+    if os.path.exists(resume_dir):
+        shutil.rmtree(resume_dir)
+    os.makedirs(resume_dir)
 
     uploaded_files = st.file_uploader("\U0001F4C2 Upload Resumes", accept_multiple_files=True, type=['pdf'])
 
     if uploaded_files:
-        resume_paths = [f"resumes/{file.name}" for file in uploaded_files]
+        resume_paths = [os.path.join(resume_dir, file.name) for file in uploaded_files]
         for file in uploaded_files:
-            with open(f"resumes/{file.name}", "wb") as f:
+            with open(os.path.join(resume_dir, file.name), "wb") as f:
                 f.write(file.read())
         resume_handler.pdf_paths = resume_paths
 
@@ -46,7 +46,7 @@ with col1:
         try:
             loader = WebBaseLoader(url)
             data = loader.load().pop().page_content
-            return data
+            return clean_text(data)
         except Exception as e:
             st.error(f"Error extracting job description: {str(e)}")
             return ""
@@ -61,45 +61,46 @@ with col1:
                 ext_skills = skills_obj.query_skills(jd_skills)
                 projects = skills_obj.query_projects(jd_skills)
 
-                st.markdown("📌 **Extracted Job Details:**")
+                st.markdown("\U0001F4CB **Extracted Job Details:**")
                 st.markdown(f"""
-                - **Company:** {job_details.get('company', 'N/A')}
-                - **Role:** {job_details.get('role', 'N/A')}
-                
-                **Experience Required:** 
-                {job_details.get('experience', 'N/A')}
+                - **Company:** {safe_format(job_details.get('company', 'N/A'))}
+                - **Role:** {safe_format(job_details.get('role', 'N/A'))}
+
+                **Experience Required:**  
+                {safe_format(job_details.get('experience', 'N/A'))}
 
                 **Skills Required:**  
-                {', '.join(job_details.get('skills', []))}
-
+                {safe_format(job_details.get('skills', []))}
 
                 **Job Description:**  
-                {job_details.get('description', 'N/A')}
+                {safe_format(job_details.get('description', 'N/A'))}
                 """)
 
                 resume, best_resume_path, resume_scores = resume_handler.load_resumes(job_details)
 
-                st.write("📄 **ATS Resume Matching Scores:**")
+                st.write("\U0001F4C4 **ATS Resume Matching Scores:**")
                 for name, score_info in resume_scores.items():
                     st.markdown(f"""
                     **{name}**
-                    - Semantic Match: `{score_info['Semantic Score']}`
-                    - Keyword Match: `{score_info['Keyword Match']}`
-                    - 🏆 ATS Score: `{score_info['ATS Score']}`
+                    - \U0001F9E0 Semantic Match: `{score_info.get('Semantic Score', 0):.2f}`
+                    - \U0001FA9A Keyword Match: `{score_info.get('Keyword Match', 0):.2f}`
+                    - \U0001F50D Role Alignment: `{score_info.get('Role Alignment', 0):.2f}`
+                    - \U0001F4C8 Experience Fit: `{score_info.get('Experience Fit', 0):.2f}`
+                    - \U0001F4BC Project Relevance: `{score_info.get('Project Relevance', 0):.2f}`
+                    - \U0001F3C6 Final ATS Score: `{score_info.get('ATS Score', 0):.2f}`
                     """)
 
                 st.success(f"✅ Best Resume: `{os.path.basename(best_resume_path)}`")
-                # Suggest missing skills for the best resume
-                suggested_skills = resume_handler.suggest_skills(job_details['skills'], best_resume_path)
 
+                suggested_skills = resume_handler.suggest_skills(job_details['skills'], best_resume_path)
                 if suggested_skills:
                     inline_skills = ", ".join(suggested_skills)
-                    st.markdown(f"📌 **Suggested Skills to Add:** {inline_skills}")
+                    st.markdown(f"\U0001F4CC **Suggested Skills to Add:** {inline_skills}")
                 else:
-                    st.success("✅ Your resume includes all the key kills")
+                    st.success("✅ Your resume includes all the key skills")
 
                 suggested_projects = skills_obj.generate_project_ideas(jd_skills)
-                st.write("🧠 Suggested Project Ideas:")
+                st.write("\U0001F9E0 Suggested Project Ideas:")
                 st.write(suggested_projects)
 
                 email = chain.write_mail(job_desc, resume, job_details['role'], job_details['company'], ext_skills, projects)
@@ -107,6 +108,7 @@ with col1:
                 st.text(email)
         else:
             st.error("Please upload your resume PDFs and provide a job description URL.")
+
 
 if "chat_history" not in st.session_state:
     st.session_state.chat_history = []
@@ -136,7 +138,7 @@ with col2:
         st.session_state.chat_history = []
 
     # Step 1: Process input (but DON'T render anything yet)
-    user_input = st.chat_input("Type your message here...")  # stays at bottom automatically
+    user_input = st.chat_input("Type your message here...")
 
     if user_input:
         current_time = datetime.now().strftime("%I:%M %p")

@@ -5,8 +5,6 @@ from langchain_core.prompts import PromptTemplate
 from langchain_core.output_parsers import JsonOutputParser
 from langchain_core.exceptions import OutputParserException
 from dotenv import load_dotenv
-from resumehandler import ResumeHandler
-from skills import skills
 from utils import clean_text
 
 load_dotenv()
@@ -21,13 +19,14 @@ class Chain:
         ### SCRAPED TEXT FROM WEBSITE:
         {data}
         ### INSTRUCTION:
-        The scraped text is from the career's page of a website.
         Your job is to extract the job postings and return them in JSON format containing the 
-        following keys: `company`,`role`, `experience`, `skills` and `description`.
-        Only return the valid JSON.
-        IN this remove the outer list
-        ### VALID JSON (NO PREAMBLE):    
-        """ )
+        following keys: `company`, `role`, `experience`, `skills`, and `description`.
+
+        - `skills`: This must be a **comma-separated list** of specific skills only (e.g., "Python, NLP, TensorFlow, Git, LLM fine-tuning").
+        Do NOT include full sentences or project descriptions.
+        Only return names of tools, libraries, models, or techniques (e.g., "RAG", "RLHF", "LangChain", "PEFT", etc.).
+
+        Only return the valid JSON. Remove the outer list.""")
 
         chain_extract = prompt | self.llm
         extracted_JD = chain_extract.invoke({"data": cleaned_text})
@@ -41,24 +40,26 @@ class Chain:
 
     def write_mail(self, jd, resume, role, company, skills, projects):
         prompt_email = PromptTemplate.from_template(
-        """
-        ### JOB DESCRIPTION:
-        Please tailor the email to the specific job description {job_description}
+            """
+            ### JOB DESCRIPTION:
+            Tailor the email to this job description: {job_description}
 
-        ### INSTRUCTION:
+            ### INSTRUCTION:
 
-        You are Suman Madipeddi AI and LLMs engineer at Minor Chores and Robotics graduate student at ASU.
-        
-        Your job is to write a cold and skilled in crafting professional cold emails for job applications. Write a concise and engaging cold email to a recruiter for the role of {role} at {company}. The email should highlight my key skills, projects, and experiences that align with the job description, but dont put much which i dont have. eep the email personalized and professional while maintaining a warm and approachable tone. Ensure the subject line is attention-grabbing. Keep the body of the email within 150-200 words and include a compelling call-to-action for further discussion.
+            Write a short, compelling, and professional cold email to a recruiter for the role of {role} at {company}.
+            
+            Keep it:
+            - Within 120–140 words
+            - Personalized and warm
+            - Focused only on relevant skills, projects, and experience
+            You are name on the resume, recent role and company and the latest degree and university from my {resume} and use that to include the most relevant project titles and {Projects}, along with highly relevant {skills}. If any are unrelated to the role, skip them. Avoid repetition.
 
+            Refer to my most recent role and education in the resume. You may also extract my graduation year, email, or phone if relevant. The email should sound enthusiastic and natural, with a strong and actionable close.
 
-        Use my {resume} and add the most relevant project titles and {Projects} and some highly related {skills}. if any duplicates are there remove those.
+            Do NOT include any intro/preamble — only output the email.
 
-        Remember you are name inside the resume AI and LLMs engineer at Minor Chores and Robotics graduate student at ASU, graduating in May 2025. The email should sound natural, enthusiastic, and action-driven, ensuring it creates a strong impression.
-
-        Do not provide a preamble.
-        ### EMAIL (NO PREAMBLE):
-        """
+            ### EMAIL (NO PREAMBLE):
+            """
         )
 
         chain_email = prompt_email | self.llm

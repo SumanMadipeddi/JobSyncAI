@@ -33,14 +33,30 @@ class skills:
 
     def generate_project_ideas(self, skills):
         prompt = f"""
-        Generate a possible, advanced, and industry-relevant project idea based on these skills: {', '.join(skills)}.
-        The project should follow this format:
+        You are an expert AI career assistant generating portfolio-ready project ideas tailored to a specific job description.
+
+        Based on the following skills: {', '.join(skills)}, generate **2 realistic, advanced, and industry-relevant project ideas** that are:
+
+        - Closely aligned with the job responsibilities typically associated with these skills
+        - Feasible to build using open-source tools, public datasets, or widely available APIs
+        - Valuable to real-world companies, with clear industry relevance
         Project 1: <Project Title>
-        Industry Case: <Why this project is important and where it fits in real-world company use cases in a few lines>
-        Project Description: <A high-level summary of how this project works and what it solves. Focus on realism and industry alignment. Mention technologies only if they make sense for the problem. give me in few lines only>
+        Industry Case:
+        <1–2 lines explaining why this project is valuable or in demand in the industry>
+
+        Project Description:
+        <2–3 lines on what the project does, how it solves a real problem, and what technologies or approaches are used (mention tools only if necessary)>
+
+        Project 2: <Project Title>
+        Industry Case:
+        <...>
+
+        Project Description:
+        <...>
 
         Only return 2 project. Do NOT use bullet points. Do not explain anything before or after. This should look like it belongs in a professional portfolio.
         """
         model = ChatGoogleGenerativeAI(model="gemini-2.0-flash", api_key=api_key, temperature=0.2)
         response = model.invoke(prompt)
         return response.content if response else "Sorry, I couldn't generate a response."
+    
