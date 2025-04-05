@@ -5,6 +5,7 @@ from langchain.vectorstores import FAISS
 from langchain_google_genai import GoogleGenerativeAIEmbeddings
 from langchain.chains import RetrievalQA
 from difflib import SequenceMatcher
+from google import genai
 import os
 import re
 import shutil
@@ -13,7 +14,6 @@ from dotenv import load_dotenv
 load_dotenv()
 api_key = os.getenv("GEMINI_API_KEY")
 model = SentenceTransformer('all-MiniLM-L6-v2')
-
 class ResumeHandler:
     def __init__(self, api_key, pdf_paths=[]):
         self.api_key = api_key
