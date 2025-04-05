@@ -12,13 +12,7 @@ import shutil
 from dotenv import load_dotenv
 
 load_dotenv()
-
-client = genai.Client(
-    vertexai=True,
-    project="Gemini API",
-    location="us-central1"
-)
-
+api_key = os.getenv("GEMINI_API_KEY")
 class ResumeHandler:
     def __init__(self, api_key, pdf_paths=[]):
         self.api_key = api_key
