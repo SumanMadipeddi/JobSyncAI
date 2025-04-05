@@ -8,9 +8,6 @@ from langchain.vectorstores import FAISS
 load_dotenv()
 api_key = os.getenv("GEMINI_API_KEY")
 
-client = genai.Client(api_key=api_key)
-embedding_model = GoogleGenerativeAIEmbeddings(model="models/text-embedding-004", google_api_key=api_key)
-
 class skills:
     def __init__(self, file_path="suman_projects.csv"):
         self.file_path = file_path

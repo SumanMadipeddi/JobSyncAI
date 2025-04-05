@@ -13,6 +13,8 @@ from dotenv import load_dotenv
 
 load_dotenv()
 api_key = os.getenv("GEMINI_API_KEY")
+model = SentenceTransformer('all-MiniLM-L6-v2')
+
 class ResumeHandler:
     def __init__(self, api_key, pdf_paths=[]):
         self.api_key = api_key
@@ -20,7 +22,6 @@ class ResumeHandler:
         self.gemini_embeddings = GoogleGenerativeAIEmbeddings(
             model="models/text-embedding-004", google_api_key=self.api_key
         )
-        self.model = SentenceTransformer('all-MiniLM-L6-v2')
         self.vectordb = None
 
     def embed_text(self, text):
