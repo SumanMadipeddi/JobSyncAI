@@ -5,12 +5,19 @@ from langchain.vectorstores import FAISS
 from langchain_google_genai import GoogleGenerativeAIEmbeddings
 from langchain.chains import RetrievalQA
 from difflib import SequenceMatcher
+from google import genai
 import os
 import re
 import shutil
 from dotenv import load_dotenv
 
 load_dotenv()
+
+client = genai.Client(
+    vertexai=True,
+    project="Gemini API",
+    location="us-central1"
+)
 
 class ResumeHandler:
     def __init__(self, api_key, pdf_paths=[]):
