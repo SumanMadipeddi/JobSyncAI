@@ -11,6 +11,8 @@ import shutil
 from dotenv import load_dotenv
 
 load_dotenv()
+api_key = os.getenv("GEMINI_API_KEY")
+model = SentenceTransformer('all-MiniLM-L6-v2')
 
 class ResumeHandler:
     def __init__(self, api_key, pdf_paths=[]):
