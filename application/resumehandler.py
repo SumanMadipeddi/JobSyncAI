@@ -20,7 +20,7 @@ class ResumeHandler:
         self.gemini_embeddings = GoogleGenerativeAIEmbeddings(
             model="models/text-embedding-004", google_api_key=self.api_key
         )
-        self.model = SentenceTransformer('paraphrase-MiniLM-L3-v2')
+        self.model = SentenceTransformer('all-MiniLM-L6-v2')
         self.vectordb = None
 
 
