@@ -1,11 +1,10 @@
 from langchain_community.document_loaders import PyPDFLoader
 from sentence_transformers import SentenceTransformer
 from sklearn.metrics.pairwise import cosine_similarity
-from langchain.vectorstores import FAISS
+from langchain_community.vectorstores import FAISS
 from langchain_google_genai import GoogleGenerativeAIEmbeddings
 from langchain.chains import RetrievalQA
 from difflib import SequenceMatcher
-from google import genai
 import os
 import re
 import shutil
@@ -15,7 +14,6 @@ load_dotenv()
 
 api_key = os.getenv("GEMINI_API_KEY")
 model = SentenceTransformer('all-MiniLM-L6-v2')
-
 class ResumeHandler:
     def __init__(self, api_key, pdf_paths=[]):
         self.api_key = api_key
@@ -25,6 +23,7 @@ class ResumeHandler:
         )
         self.model = SentenceTransformer('all-MiniLM-L6-v2')
         self.vectordb = None
+
 
     def embed_text(self, text):
         return self.model.encode(text).reshape(1, -1)
