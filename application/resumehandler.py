@@ -1,5 +1,4 @@
 from langchain_community.document_loaders import PyPDFLoader
-from sentence_transformers import SentenceTransformer
 from sklearn.metrics.pairwise import cosine_similarity
 from langchain_community.vectorstores import FAISS
 from langchain_google_genai import GoogleGenerativeAIEmbeddings
@@ -13,7 +12,6 @@ from dotenv import load_dotenv
 load_dotenv()
 
 api_key = os.getenv("GEMINI_API_KEY")
-model = SentenceTransformer('all-MiniLM-L6-v2')
 class ResumeHandler:
     def __init__(self, api_key, pdf_paths=[]):
         self.api_key = api_key
@@ -21,12 +19,11 @@ class ResumeHandler:
         self.gemini_embeddings = GoogleGenerativeAIEmbeddings(
             model="models/text-embedding-004", google_api_key=self.api_key
         )
-        self.model = SentenceTransformer('all-MiniLM-L6-v2')
         self.vectordb = None
 
 
     def embed_text(self, text):
-        return self.model.encode(text).reshape(1, -1)
+        return self.gemini_embeddings.embed(text) 
 
     def extract_text_from_pdf(self, pdf_path):
         loader = PyPDFLoader(pdf_path)
