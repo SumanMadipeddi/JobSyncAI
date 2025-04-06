@@ -4,14 +4,15 @@ from langchain_community.vectorstores import FAISS
 from langchain_google_genai import GoogleGenerativeAIEmbeddings
 from langchain.chains import RetrievalQA
 from difflib import SequenceMatcher
+import numpy as np
 import os
 import re
 import shutil
 from dotenv import load_dotenv
 
 load_dotenv()
-
 api_key = os.getenv("GEMINI_API_KEY")
+
 class ResumeHandler:
     def __init__(self, api_key, pdf_paths=[]):
         self.api_key = api_key
@@ -21,10 +22,9 @@ class ResumeHandler:
         )
         self.vectordb = None
 
-
     def embed_text(self, text):
-        return self.gemini_embeddings.embed_documents([text])[0]
-
+        embeddings = self.gemini_embeddings.embed_documents([text])[0]  
+        return np.array(embeddings).reshape(1, -1)
 
     def extract_text_from_pdf(self, pdf_path):
         loader = PyPDFLoader(pdf_path)
@@ -32,8 +32,6 @@ class ResumeHandler:
         return " ".join([p.page_content for p in pages])
 
     def load_resumes(self, jd):
-        from chain import Chain
-
         # Clear in-memory vectorstore
         self.vectordb = None
 
@@ -60,6 +58,8 @@ class ResumeHandler:
         for pdf in self.pdf_paths:
             full_text = self.extract_text_from_pdf(pdf).lower()
             embedding = self.embed_text(full_text)
+            
+            # Ensure both embeddings are of the same shape
             semantic_score = cosine_similarity(embedding, jd_embedding)[0][0]
 
             matches = sum(1 for skill in jd.get('skills', []) if skill.lower() in full_text)
