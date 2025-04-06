@@ -23,7 +23,8 @@ class ResumeHandler:
 
 
     def embed_text(self, text):
-        return self.gemini_embeddings.embed(text) 
+        return self.gemini_embeddings.embed_documents([text])[0]
+
 
     def extract_text_from_pdf(self, pdf_path):
         loader = PyPDFLoader(pdf_path)
