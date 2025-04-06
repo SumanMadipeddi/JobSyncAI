@@ -1,7 +1,6 @@
 import pandas as pd
 import os
 from dotenv import load_dotenv
-from google import genai
 from langchain_google_genai import ChatGoogleGenerativeAI, GoogleGenerativeAIEmbeddings
 from langchain.vectorstores import FAISS
 
@@ -15,10 +14,13 @@ class skills:
 
         self.documents = self.data["Skills Used"].astype(str).tolist()
         self.metadatas = self.data[["Project Name"]].rename(columns={"Project Name": "Projects"}).to_dict(orient="records")
+        self.gemini_embeddings = GoogleGenerativeAIEmbeddings(
+            model="models/text-embedding-004", google_api_key=api_key
+        )
 
 
         # Build the FAISS vector index
-        self.vectordb = FAISS.from_texts(self.documents, embedding_model, metadatas=self.metadatas)
+        self.vectordb = FAISS.from_texts(self.documents, self.gemini_embeddings, metadatas=self.metadatas)
 
     def query_skills(self, skill_list):
         results = self.vectordb.similarity_search_with_score(" ".join(skill_list), k=2)
