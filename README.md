@@ -119,4 +119,4 @@ Built by [Suman Madipeddi](https://github.com/SumanMadipeddi) — making job app
 
 ## 📜 License
 
-MIT License
+Apache License Version 2.0
